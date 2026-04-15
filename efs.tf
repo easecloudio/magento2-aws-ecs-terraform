@@ -32,8 +32,8 @@ resource "aws_ssm_parameter" "efs" {
 module "efs" {
   source                     = "terraform-aws-modules/efs/aws"
   version                    = "2.0.0"
-  name                       = "${local.project}-magento"
-  creation_token             = "${local.project}-magento-efs"
+  name                       = "${local.project}-efs"
+  creation_token             = "${local.project}-efs"
   encrypted                  = true
   enable_backup_policy       = false
   mount_targets              = { for az, id in zipmap(module.vpc.azs, module.vpc.private_subnets) : az => { subnet_id = id } }
