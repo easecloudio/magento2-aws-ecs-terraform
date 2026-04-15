@@ -99,7 +99,7 @@ resource "aws_codebuild_project" "this" {
     buildspec = file("${path.module}/buildspec.yml")
   }
   vpc_config {
-    vpc_id = module.vpc.vpc_id
+    vpc_id  = module.vpc.vpc_id
     subnets = module.vpc.private_subnets
     security_group_ids = [
       module.codebuild_security_group.security_group_id
@@ -111,7 +111,7 @@ resource "aws_codebuild_project" "this" {
       stream_name = "${local.project}-codebuild-release"
     }
     s3_logs {
-      status   = "DISABLED"
+      status = "DISABLED"
     }
   }
 }
@@ -136,11 +136,11 @@ resource "aws_codestarnotifications_notification_rule" "codebuild" {
 # Create CodeBuild security group
 # # ---------------------------------------------------------------------------------------------------------------------#
 module "codebuild_security_group" {
-  source      = "terraform-aws-modules/security-group/aws"
-  version     = "5.3.0"
-  name        = "${local.project}-codebuild"
-  description = "Security group for CodeBuild to access EFS and internet"
-  vpc_id      = module.vpc.vpc_id
+  source                   = "terraform-aws-modules/security-group/aws"
+  version                  = "5.3.0"
+  name                     = "${local.project}-codebuild"
+  description              = "Security group for CodeBuild to access EFS and internet"
+  vpc_id                   = module.vpc.vpc_id
   ingress_with_cidr_blocks = []
   egress_with_source_security_group_id = [
     {

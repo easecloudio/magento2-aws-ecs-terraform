@@ -24,7 +24,7 @@ resource "aws_ssm_parameter" "s3" {
   type        = "String"
   value       = each.value
   tags = {
-    Service   = "s3"
+    Service = "s3"
   }
 }
 # # ---------------------------------------------------------------------------------------------------------------------#
@@ -49,7 +49,7 @@ data "aws_iam_policy_document" "logs" {
 }
 
 data "aws_iam_policy_document" "releases" {
- statement {
+  statement {
     actions = [
       "s3:ListBucket",
       "s3:GetObject"
@@ -60,7 +60,7 @@ data "aws_iam_policy_document" "releases" {
     ]
     principals {
       type        = "AWS"
-      identifiers =  [aws_iam_role.codebuild.arn]
+      identifiers = [aws_iam_role.codebuild.arn]
     }
   }
 }
@@ -110,10 +110,10 @@ data "aws_iam_policy_document" "backup" {
 
 locals {
   bucket_policy = {
-    "logs"      = data.aws_iam_policy_document.logs.json
-    "media"     = data.aws_iam_policy_document.media.json
-    "releases"  = data.aws_iam_policy_document.releases.json
-    "backup"    = data.aws_iam_policy_document.backup.json
+    "logs"     = data.aws_iam_policy_document.logs.json
+    "media"    = data.aws_iam_policy_document.media.json
+    "releases" = data.aws_iam_policy_document.releases.json
+    "backup"   = data.aws_iam_policy_document.backup.json
   }
 }
 
@@ -121,26 +121,26 @@ locals {
 # Create S3 buckets
 # # ---------------------------------------------------------------------------------------------------------------------#
 module "s3" {
-  source   = "terraform-aws-modules/s3-bucket/aws"
-  version  = "5.8.1"
-  for_each = local.env.s3.bucket
-  bucket   = "${local.project}-${each.key}"
-  acl      = "private"
-  attach_policy            = true
-  policy                   = local.bucket_policy[each.key]
-  force_destroy            = true
-  control_object_ownership = true
-  object_ownership         = "ObjectWriter"
-  expected_bucket_owner    = data.aws_caller_identity.current.account_id
+  source                         = "terraform-aws-modules/s3-bucket/aws"
+  version                        = "5.8.1"
+  for_each                       = local.env.s3.bucket
+  bucket                         = "${local.project}-${each.key}"
+  acl                            = "private"
+  attach_policy                  = true
+  policy                         = local.bucket_policy[each.key]
+  force_destroy                  = true
+  control_object_ownership       = true
+  object_ownership               = "ObjectWriter"
+  expected_bucket_owner          = data.aws_caller_identity.current.account_id
   attach_elb_log_delivery_policy = each.key == "logs" ? true : false
   attach_waf_log_delivery_policy = each.key == "logs" ? true : false
   versioning = {
     enabled = each.value.versioning
-  }  
+  }
   server_side_encryption_configuration = {
     rule = {
       apply_server_side_encryption_by_default = {
-        sse_algorithm     = "aws:kms"
+        sse_algorithm = "aws:kms"
       }
     }
   }
@@ -154,9 +154,9 @@ module "s3" {
   }
   lifecycle_rule = [
     {
-      id      = "delete-unaccessed-after-90-days"
-      status  = each.value.lifecycle_rule.status
-      filter  = {}
+      id     = "delete-unaccessed-after-90-days"
+      status = each.value.lifecycle_rule.status
+      filter = {}
       expiration = {
         days = 91
       }

@@ -15,8 +15,8 @@ resource "aws_wafv2_web_acl" "this" {
   }
   visibility_config {
     cloudwatch_metrics_enabled = true
-    metric_name = "${local.project}-waf-rules"
-    sampled_requests_enabled = true
+    metric_name                = "${local.project}-waf-rules"
+    sampled_requests_enabled   = true
   }
   dynamic "rule" {
     for_each = local.waf_ipset_rules
@@ -70,51 +70,51 @@ resource "aws_wafv2_web_acl" "this" {
     }
     statement {
       rate_based_statement {
-       limit              = 500
-       aggregate_key_type = "IP"
-       evaluation_window_sec = 120
-       }
-     }
-      visibility_config {
+        limit                 = 500
+        aggregate_key_type    = "IP"
+        evaluation_window_sec = 120
+      }
+    }
+    visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.project}-rate-rule"
       sampled_requests_enabled   = true
     }
-   }
+  }
   rule {
-    name = "AWSManagedRulesCommonRule"
+    name     = "AWSManagedRulesCommonRule"
     priority = 4
     override_action {
       none {}
     }
     statement {
       managed_rule_group_statement {
-        name = "AWSManagedRulesCommonRuleSet"
+        name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
       }
     }
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name = "${local.project}-AWSManagedRulesCommonRule"
-      sampled_requests_enabled = true
+      metric_name                = "${local.project}-AWSManagedRulesCommonRule"
+      sampled_requests_enabled   = true
     }
   }
   rule {
-    name = "AWSManagedRulesAmazonIpReputation"
+    name     = "AWSManagedRulesAmazonIpReputation"
     priority = 5
     override_action {
       none {}
     }
     statement {
       managed_rule_group_statement {
-        name = "AWSManagedRulesAmazonIpReputationList"
+        name        = "AWSManagedRulesAmazonIpReputationList"
         vendor_name = "AWS"
       }
     }
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name = "${local.project}-AWSManagedRulesAmazonIpReputation"
-      sampled_requests_enabled = true
+      metric_name                = "${local.project}-AWSManagedRulesAmazonIpReputation"
+      sampled_requests_enabled   = true
     }
   }
 }

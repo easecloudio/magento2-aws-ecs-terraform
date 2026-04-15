@@ -8,10 +8,10 @@
 locals {
   # Are we in us-east-1?
   use_us_east_1 = data.aws_region.current.region != "us-east-1"
-  
+
   # Get environment name from workspace name
   environment = lower(terraform.workspace)
-  
+
   # YAML files with variables per environment
   config_files = {
     staging    = try(file("${abspath(path.root)}/staging.config.yaml"), "")
@@ -21,30 +21,30 @@ locals {
 
   # Variables constructor to pass in root module [ var = local.env.vpc.cidr_block ]
   env = yamldecode(local.config_files[local.environment])
-  
+
   # Create global project name to be assigned to all resources
   project = lower("${local.env.brand}-${local.env.codename}")
-  
+
   # Provider default tags for every resource
   default_tags = {
-    Terraform    = true
-    Brand        = local.env.brand
-    Codename     = local.env.codename
-    Environment  = local.environment
+    Terraform   = true
+    Brand       = local.env.brand
+    Codename    = local.env.codename
+    Environment = local.environment
   }
 
   # Cloudwatch metrics alarm for services
   metrics_alarm = merge(
     local.env.elasticache.metrics,
     local.env.opensearch.metrics,
-	local.env.asg.metrics,
+    local.env.asg.metrics,
     local.env.aurora.create ? local.env.aurora.metrics : {},
     local.env.rds.create ? local.env.rds.metrics : {}
   )
 
-# # ---------------------------------------------------------------------------------------------------------------------#
-# Define WAF whitelist and blacklist IP sets
-# # ---------------------------------------------------------------------------------------------------------------------#
+  # # ---------------------------------------------------------------------------------------------------------------------#
+  # Define WAF whitelist and blacklist IP sets
+  # # ---------------------------------------------------------------------------------------------------------------------#
   waf_ipset = {
     whitelist = {
       name        = "${local.project}-whitelist-ip-set"
@@ -61,16 +61,16 @@ locals {
   # Define rules for whitelist and blacklist
   waf_ipset_rules = {
     allow-whitelisted-ips = {
-      priority     = 0
-      action       = "allow"
-      ip_set_key   = "whitelist"
-      metric_name  = "${local.project}-allow-whitelisted-ips"
+      priority    = 0
+      action      = "allow"
+      ip_set_key  = "whitelist"
+      metric_name = "${local.project}-allow-whitelisted-ips"
     }
     block-blacklisted-ips = {
-      priority     = 1
-      action       = "block"
-      ip_set_key   = "blacklist"
-      metric_name  = "${local.project}-block-blacklisted-ips"
+      priority    = 1
+      action      = "block"
+      ip_set_key  = "blacklist"
+      metric_name = "${local.project}-block-blacklisted-ips"
     }
   }
 }

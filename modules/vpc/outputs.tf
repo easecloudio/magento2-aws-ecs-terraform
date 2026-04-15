@@ -1,10 +1,10 @@
-output "vpc_id"                     { value = aws_vpc.this.id }
-output "vpc_cidr_block"             { value = aws_vpc.this.cidr_block }
-output "private_subnets"            { value = aws_subnet.private[*].id }
-output "public_subnets"             { value = aws_subnet.public[*].id }
-output "database_subnets"           { value = aws_subnet.database[*].id }
+output "vpc_id" { value = aws_vpc.this.id }
+output "vpc_cidr_block" { value = aws_vpc.this.cidr_block }
+output "private_subnets" { value = aws_subnet.private[*].id }
+output "public_subnets" { value = aws_subnet.public[*].id }
+output "database_subnets" { value = aws_subnet.database[*].id }
 output "database_subnet_group_name" { value = try(aws_db_subnet_group.this[0].name, null) }
-output "azs"                        { value = local.azs }
-output "primary_private_subnet_id"  { value = aws_subnet.private[0].id }
+output "azs" { value = local.azs }
+output "primary_private_subnet_id" { value = aws_subnet.private[0].id }
 output "primary_database_subnet_id" { value = try(aws_subnet.database[0].id, null) }
 output "private_subnets_cidr_blocks" { value = aws_subnet.private[*].cidr_block }

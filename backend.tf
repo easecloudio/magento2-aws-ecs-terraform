@@ -8,10 +8,10 @@
 # # ---------------------------------------------------------------------------------------------------------------------#
 terraform {
   backend "s3" {
-    use_lockfile    = true
-    bucket          = ""
-    key             = ""
-    region          = ""
+    use_lockfile         = true
+    bucket               = ""
+    key                  = ""
+    region               = ""
     workspace_key_prefix = ""
   }
 }

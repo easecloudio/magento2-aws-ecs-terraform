@@ -6,23 +6,23 @@
 # Create Autoscaling group
 # # ---------------------------------------------------------------------------------------------------------------------#
 module "autoscaling" {
-  source           = "terraform-aws-modules/autoscaling/aws"
-  version          = "9.0.1"
-  for_each         = local.env.ecs.container
-  name             = "${local.project}-${each.key}-ecs-asg"
-  image_id         = data.aws_ami.ecs_optimized.id
-  instance_type    = each.value.instance_type
-  security_groups  = [module.autoscaling_security_group[each.key].security_group_id]
+  source          = "terraform-aws-modules/autoscaling/aws"
+  version         = "9.0.1"
+  for_each        = local.env.ecs.container
+  name            = "${local.project}-${each.key}-ecs-asg"
+  image_id        = data.aws_ami.ecs_optimized.id
+  instance_type   = each.value.instance_type
+  security_groups = [module.autoscaling_security_group[each.key].security_group_id]
   user_data = base64encode(<<-EOF
   #!/bin/bash
   echo ECS_CLUSTER="${local.project}-${each.key}-ecs-cluster" >> /etc/ecs/ecs.config
   EOF
   )
-  vpc_zone_identifier    = local.env.asg.multi_az ? module.vpc.private_subnets : [module.vpc.primary_private_subnet_id]
-  health_check_type      = local.env.asg.health_check_type
-  min_size               = each.value.min_size
-  max_size               = each.value.max_size
-  desired_capacity       = each.value.desired_capacity
+  vpc_zone_identifier             = local.env.asg.multi_az ? module.vpc.private_subnets : [module.vpc.primary_private_subnet_id]
+  health_check_type               = local.env.asg.health_check_type
+  min_size                        = each.value.min_size
+  max_size                        = each.value.max_size
+  desired_capacity                = each.value.desired_capacity
   protect_from_scale_in           = local.env.asg.protect_from_scale_in
   ignore_desired_capacity_changes = true
   create_iam_instance_profile     = true
@@ -51,7 +51,7 @@ module "autoscaling" {
               min = local.env.asg.override.instance_requirements.memory_mib.min
               max = local.env.asg.override.instance_requirements.memory_mib.max
             }
-            instance_generations = local.env.asg.override.instance_requirements.instance_generations
+            instance_generations  = local.env.asg.override.instance_requirements.instance_generations
             burstable_performance = local.env.asg.override.instance_requirements.burstable_performance
           }
         }
@@ -71,19 +71,19 @@ module "autoscaling" {
     }
   }]
   tag_specifications = [
-  {
-    resource_type = "instance"
-    tags = {
-        Name = "${local.project}-${each.key}-ec2"
-        Shortname = each.key
-        Hostname = "${each.key}.${local.env.brand}.internal"
+    {
+      resource_type = "instance"
+      tags = {
+        Name        = "${local.project}-${each.key}-ec2"
+        Shortname   = each.key
+        Hostname    = "${each.key}.${local.env.brand}.internal"
         Environment = local.environment
       }
     },
-	{
-    resource_type = "volume"
-    tags = {
-        Name = "${local.project}-${each.key}-volume"
+    {
+      resource_type = "volume"
+      tags = {
+        Name        = "${local.project}-${each.key}-volume"
         Environment = local.environment
       }
     }
@@ -117,17 +117,17 @@ module "autoscaling_security_group" {
   description = "Autoscaling security group"
   vpc_id      = module.vpc.vpc_id
   computed_ingress_with_source_security_group_id = [{
-      rule                     = "http-80-tcp"
-      source_security_group_id = module.alb.security_group_id
-    }]
+    rule                     = "http-80-tcp"
+    source_security_group_id = module.alb.security_group_id
+  }]
   number_of_computed_ingress_with_source_security_group_id = 1
-  egress_rules = ["all-all"]
+  egress_rules                                             = ["all-all"]
 }
 # # ---------------------------------------------------------------------------------------------------------------------#
 # Create Autoscaling SNS topic email alerts
 # # ---------------------------------------------------------------------------------------------------------------------#
 resource "aws_autoscaling_notification" "this" {
-  for_each    = module.autoscaling
+  for_each = module.autoscaling
   group_names = [
     each.value.autoscaling_group_name
   ]

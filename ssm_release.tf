@@ -10,7 +10,7 @@ resource "aws_ssm_document" "release" {
   name            = "LatestReleaseDeployment"
   document_type   = "Automation"
   document_format = "YAML"
-  content = <<EOF
+  content         = <<EOF
 schemaVersion: "0.3"
 description: "Trigger CodeBuild project when new release is uploaded to S3"
 assumeRole: ${aws_iam_role.ssm_service_role.arn}

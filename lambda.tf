@@ -6,7 +6,7 @@
 # Create Lambda function for imgproxy
 # # ---------------------------------------------------------------------------------------------------------------------#
 
-module "imgproxy" {  
+module "imgproxy" {
   source         = "terraform-aws-modules/lambda/aws"
   version        = "8.1.2"
   create         = true
@@ -47,7 +47,7 @@ module "imgproxy" {
   tracing_mode                      = local.env.lambda.tracing_mode
   cloudwatch_logs_retention_in_days = local.env.lambda.cloudwatch_logs_retention_in_days
   logging_log_format                = local.env.lambda.logging_log_format
-  attach_policy_json = true
+  attach_policy_json                = true
   policy_json = jsonencode({
     Version = "2012-10-17"
     Statement = [

@@ -9,7 +9,7 @@
 resource "aws_iam_user" "smtp" {
   name = "${local.project}-ses-smtp-user"
 }
-	
+
 
 resource "aws_ses_domain_identity" "domain" {
   domain = local.env.domain
@@ -18,7 +18,7 @@ resource "aws_ses_domain_identity" "domain" {
 resource "aws_iam_user_policy" "smtp_policy" {
   name = "${local.project}-ses-smtp-user-policy"
   user = aws_iam_user.smtp.name
-  
+
   policy = jsonencode({
     Version : "2012-10-17",
     Statement : [
@@ -39,7 +39,7 @@ resource "aws_iam_access_key" "smtp" {
 }
 
 resource "aws_ses_configuration_set" "this" {
-  name = "${local.project}-ses-events"
+  name                       = "${local.project}-ses-events"
   reputation_metrics_enabled = true
   delivery_options {
     tls_policy = "Require"

@@ -8,39 +8,39 @@
 # # ---------------------------------------------------------------------------------------------------------------------#
 data "aws_iam_policy_document" "ssm_policy" {
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "codebuild:StartBuild",
       "codebuild:BatchGetBuilds",
     ]
     resources = [aws_codebuild_project.this.arn]
   }
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "sns:Publish",
     ]
     resources = [module.sns["devops"].topic_arn]
   }
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "ssm:StartAutomationExecution",
       "ssm:GetAutomationExecution",
     ]
     resources = [aws_ssm_document.release.arn]
   }
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "ssm:GetParameter",
       "ssm:GetParameters",
     ]
     resources = ["arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/${local.project}/*"]
   }
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "ec2:DescribeInstances",
       "ec2:DescribeSubnets",
       "ec2:DescribeVpcs",

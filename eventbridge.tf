@@ -8,20 +8,20 @@
 # # ---------------------------------------------------------------------------------------------------------------------#
 
 module "eventbridge" {
-  create      = true
-  source      = "terraform-aws-modules/eventbridge/aws"
-  version     =  "4.2.1"
-  create_bus  = false
-  bus_name    = "default"
-  create_role = true
-  role_name   = "${local.project}-EventBridgeServiceRole"
-  role_description  = "Provides EventBridge manage events on your behalf."
-  attach_sqs_policy = true
-  sqs_target_arns   = [module.sqs.queue_arn]
+  create                   = true
+  source                   = "terraform-aws-modules/eventbridge/aws"
+  version                  = "4.2.1"
+  create_bus               = false
+  bus_name                 = "default"
+  create_role              = true
+  role_name                = "${local.project}-EventBridgeServiceRole"
+  role_description         = "Provides EventBridge manage events on your behalf."
+  attach_sqs_policy        = true
+  sqs_target_arns          = [module.sqs.queue_arn]
   attach_policy_statements = true
   policy_statements = {
-    ssm_automation  = {
-      effect  = "Allow"
+    ssm_automation = {
+      effect = "Allow"
       actions = [
         "ssm:StartAutomationExecution",
         "sqs:SendMessage"
@@ -33,21 +33,21 @@ module "eventbridge" {
     "s3_release_update" = {
       description = "Trigger SSM document when s3 releases bucket release updated"
       event_pattern = jsonencode({
-        "source"      : ["aws.s3"],
+        "source" : ["aws.s3"],
         "detail-type" : ["Object Created"],
-        "detail"      : {
+        "detail" : {
           "bucket" : { "name" : [module.s3["releases"].s3_bucket_id] },
           "object" : { "key" : [{ "suffix" : ".gz" }] }
         }
       })
-      enabled = true
+      enabled  = true
       role_arn = true
     }
   }
   targets = {
     "s3_release_update" = [
       {
-	    name            = "${local.project}-s3-release-update"
+        name            = "${local.project}-s3-release-update"
         arn             = aws_ssm_document.release.arn
         attach_role_arn = true
         dead_letter_config = {
@@ -69,7 +69,7 @@ END
   append_rule_postfix = false
   create_rules        = true
   create_targets      = true
-  depends_on = [module.autoscaling]
+  depends_on          = [module.autoscaling]
 }
 
 

@@ -6,9 +6,9 @@
 # Create ECS Cluster configuration
 # # ---------------------------------------------------------------------------------------------------------------------#
 module "ecs_cluster" {
-  source       = "terraform-aws-modules/ecs/aws//modules/cluster"
-  for_each     = local.env.ecs.container
-  name         = "${local.project}-${each.key}-ecs-cluster"
+  source   = "terraform-aws-modules/ecs/aws//modules/cluster"
+  for_each = local.env.ecs.container
+  name     = "${local.project}-${each.key}-ecs-cluster"
   autoscaling_capacity_providers = {
     (each.key) = {
       auto_scaling_group_arn         = module.autoscaling[each.key].autoscaling_group_arn
@@ -38,12 +38,12 @@ resource "aws_service_discovery_private_dns_namespace" "this" {
 # Create ECS Service configuration
 # # ---------------------------------------------------------------------------------------------------------------------#
 module "ecs_service" {
-  source      = "terraform-aws-modules/ecs/aws//modules/service"
-  for_each    = local.env.ecs.container
-  name        = "${local.project}-${each.key}-ecs-service"
-  cluster_arn = module.ecs_cluster[each.key].arn
-  enable_execute_command     = true
-  requires_compatibilities   = ["EC2"]
+  source                   = "terraform-aws-modules/ecs/aws//modules/service"
+  for_each                 = local.env.ecs.container
+  name                     = "${local.project}-${each.key}-ecs-service"
+  cluster_arn              = module.ecs_cluster[each.key].arn
+  enable_execute_command   = true
+  requires_compatibilities = ["EC2"]
   capacity_provider_strategy = {
     (each.key) = {
       capacity_provider = one(keys(module.ecs_cluster[each.key].autoscaling_capacity_providers))
@@ -60,7 +60,7 @@ module "ecs_service" {
   service_connect_configuration = each.key == "varnish" ? null : {
     enabled   = true
     namespace = aws_service_discovery_private_dns_namespace.this.arn
-    service   = [{
+    service = [{
       client_alias = {
         port     = local.env.ecs.container[each.key].port
         dns_name = each.key
@@ -70,7 +70,7 @@ module "ecs_service" {
     }]
   }
   runtime_platform = {
-    cpu_architecture = local.env.ecs.cluster.cpu_architecture
+    cpu_architecture        = local.env.ecs.cluster.cpu_architecture
     operating_system_family = "LINUX"
   }
   volume = each.key == "varnish" ? {} : { for name, config in local.env.efs : name => {
@@ -84,7 +84,7 @@ module "ecs_service" {
         iam             = "ENABLED"
       }
     }
-  }}
+  } }
   container_definitions = {
     (each.key) = {
       image  = "${module.ecr[each.key].repository_url}:${local.env.ecs.container[each.key].image}"
@@ -104,7 +104,7 @@ module "ecs_service" {
         readOnly      = config.read_only
       }]
       workingDirectory = each.key == "varnish" ? null : "/home/${local.env.brand}/public/current"
-      essential   = true
+      essential        = true
       environment = each.key == "varnish" ? [
         {
           name  = "VARNISH_SIZE"
@@ -115,9 +115,9 @@ module "ecs_service" {
         initProcessEnabled = true
         tmpfs = each.key == "varnish" ? [
           {
-          containerPath = "/var/lib/varnish/varnishd"
-          mountOptions = ["exec", "noatime", "nodiratime"] 
-          size = local.env.ecs.container[each.key].memory
+            containerPath = "/var/lib/varnish/varnishd"
+            mountOptions  = ["exec", "noatime", "nodiratime"]
+            size          = local.env.ecs.container[each.key].memory
           }
         ] : []
       }
@@ -151,7 +151,7 @@ module "ecs_service" {
       sid = "SSMParameterAccess"
       actions = [
         "ssm:GetParameters",
-        "ssm:GetParameter", 
+        "ssm:GetParameter",
         "ssm:GetParametersByPath"
       ]
       resources = [
