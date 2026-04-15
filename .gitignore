@@ -1,0 +1,8 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan*
+*.plan.out*
+state.config
+*.auto.tfvars
+.terraform.lock.hcl
