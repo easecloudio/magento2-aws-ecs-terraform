@@ -1,214 +1,127 @@
-## Magento 2 [auto scaling](https://aws.amazon.com/autoscaling/) ECS cluster with Terraform on AWS cloud only
-> Deploy a full-scale secure and flexible e-commerce infrastructure based on Magento 2 in a matter of seconds.  
-> Enterprise-grade solution for companies of all sizes, B2B B2C, providing the best customer experience.  
+# Magento 2 ECS Auto Scaling Cluster — Terraform
 
-<img src="https://user-images.githubusercontent.com/1591200/117845471-7abda280-b278-11eb-8c88-db3fa307ae40.jpeg" width="155" height="105"> <img src="https://user-images.githubusercontent.com/1591200/117845982-edc71900-b278-11eb-81ec-e19465f1344c.jpeg" width="140" height="130"> <img src="https://user-images.githubusercontent.com/1591200/118028531-158ead80-b35b-11eb-8957-636de16ada34.png" width="235" height="140">
-<img src="https://user-images.githubusercontent.com/1591200/130320410-91749ce8-5af1-4802-af25-ffb36e7ded98.png" width="105" height="120">
+This repository contains a Terraform configuration that deploys a production-ready Magento 2 infrastructure on AWS. It provisions an ECS EC2 cluster (ARM Graviton) with separate Varnish and PHP-FPM backend tiers, Aurora MySQL, ElastiCache Valkey for sessions and cache, OpenSearch for catalog search, Amazon MQ for async queues, imgproxy for on-the-fly image optimization via Lambda, CloudFront CDN with WAF, an internal ALB, EFS for shared release storage, four S3 buckets, and a CodeBuild-based release pipeline triggered by S3 uploads via EventBridge. All service credentials are stored in SSM Parameter Store. Infrastructure is configured through a single YAML file per environment instead of Terraform variable files.
 
-<br />
+---
 
-## AWS Graviton3 Processor - Enabling the best performance in EC2:
-![aws-graviton3](https://user-images.githubusercontent.com/1591200/117844857-f0753e80-b277-11eb-9d27-fe8eacdf6c19.png)  
-  
-> [Amazon EC2 C7g instances upgrade](https://aws.amazon.com/ec2/instance-types/c7g/)  
-> Best price performance for compute-intensive workloads in Amazon EC2  
-  
-<br />
-
-## ❓ Why we need Adobe Commerce Cloud alternative:
-The biggest issue is that ACC pricing based on GMV % and AOV %, you overpay up to 80%, while the bill between Adobe and AWS remains at a minimum. With this approach, you invest money in the development of a third-party business, but not your own.
-Why spend so much money without having control over your business in the cloud?
-Configuring your own infrastructure these days is the most profitable way. You manage the resources, you have a complete overview how it works and you have full control over the money invested in your own infrastructure. At any time you can make changes to both infrastructure and application design without thinking about restrictions, 3rd party platform limitations and unforeseen costs. There are no hidden bills and payments for excess resources, which, as a result, you will not need.  
-
-Adobe Commerce Cloud has lots of technical problems due to the fact that many services compete on the same server and share the processor time, memory, network and I/O. Bad architectural solution using monolitic servers, not cloud native solution, that was not made specifically for Magento, but adapted in rush using many wrappers, with manual pseudo scaling and 48 hours to 5 days to accept and deploy new settings.
+## Architecture
 
 ```
-Obviously, PaaS intermediaries also use AWS Cloud. But concealing its cheap solutions with a marketing, 
-trying to hook you up on a dodgy contract and making you pay 10 times more.
-``` 
-<img align="right" width="500" src="https://user-images.githubusercontent.com/1591200/130331243-03e6097a-c380-4586-b380-cbc733237d93.png">
-
-## AWS cloud account pros:
-- [x] Open source Magento
-- [x] Pay as You Go
-- [x] Transparent billing
-- [x] No draconian contracts
-- [x] No sudden overage charges
-- [x] No hardware restrictions
-- [x] No services limitations
-- [x] No hidden bottlenecks
-- [x] No time waste for [support tickets](https://devdocs.magento.com/cloud/project/services.html) 
-  
-  
-&nbsp;  
-  
-**Amazon Web Services** offers an ecommerce cloud computing solutions to small and large businesses that want a flexible, secured, highly scalable infrastructure. All the technologies online retailers need to manage growth—instantly. With technologies like automatic scaling compute resources, networking, storage, content distribution, and a PCI-compliant environment, retailers can always provide great customer experiences and capitalize on growth opportunities.  
-
-**The biggest benefits of using your own AWS Cloud account**: [Reserved Instances](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-reserved-instances.html)  
-Reserved Instances provide you with significant savings on your Amazon EC2 costs compared to On-Demand Instance pricing. With Savings Plans, you make a commitment to a consistent usage amount, measured in USD per hour. This provides you with the flexibility to use the instance configurations that best meet your needs and continue to save money. 
-
-<br />
-
-## 📖 ECS webstack custom configuration and Auto Scaling management
-NGINX is optimized and fully supported on the latest generation of 64-bit ARM Servers utilizing the architecture. PHP using socket connection.
-
-[**Amazon Linux ECS Optimized** ARM](https://aws.amazon.com/marketplace/pp/prodview-wc4bbpw5gappowhich), will be supported for the next 5 years. Includes support for ECS and the very latest ARM-based server systems powered by certified 64-bit processors.
-Develop and deploy at scale. Webstack delivers top performance on ARM.
-
-[**AWS Systems Manager**](https://aws.amazon.com/systems-manager/) is an AWS service that you can use to view and control your infrastructure on AWS. Using the Systems Manager console, you can view operational data from multiple AWS EC2 instances and automate operational tasks across your AWS resources. Systems Manager helps you maintain security and compliance. No SSH connections from outside, no need to track passwords and private keys. If you are familiar with shell scripting, yaml and json syntax, create SSM Documents, this is the easiest and most complete way to send instructions to an instance to perform common automated configuration tasks and even run scripts after the instance starts. From default stack optimization to changing any application and service settings.
-
-<br />
-
-## Developer documentation to read:
-``` 
-https://devdocs.magento.com/
-https://docs.aws.amazon.com/index.html
-https://www.terraform.io/docs/
-https://aws.amazon.com/cloudshell/
+Internet
+    |
++------------------+
+|  CloudFront+WAF  |
++------------------+
+    |            |
+    |            +---------------------------+
+    v                                        v
+/media/catalog/product/*             All other requests
+    |                                        |
+    v                                        v
++---------------+              +------------------------+
+| Lambda URL    |              | ALB (internal, VPC     |
+| imgproxy ARM  |              | origin, secret header) |
++---------------+              +------------------------+
+    |                                        |
+    v                                        v
+ S3 media                      ECS Varnish (EC2 ARM ASG)
+                                             |
+                                             v
+                               ECS Backend (EC2 ARM ASG)
+                                    |   |   |   |
+                               Aurora ElastiCache OpenSearch MQ
+                               MySQL  Valkey
+                                    |       |
+                                   EFS     S3
+                               (releases) (media/backup)
 ```
-<br />
 
-The terraform configuration language and all the files in this repository are intuitively simple and straightforward. They are written in simple text and functions that any beginner can understand. Terraform deployment with zero dependency, no prerequisites, no need to install additional software, no programming required.  
-  
-The idea was to create a full-fledged turnkey infrastructure, with deeper settings, so that any ecommerce manager could deploy it and immediately use it for his brand.
+---
 
-<br />
+## What's Included
 
-# :rocket: Deployment into isolated VPC:
-- [x] Login to AWS Console
-- [x] Choose an AWS Region
-- [x] Start AWS CloudShell [fastest way to deploy and debug]
-- [x] Install Terraform:
-```
-   sudo yum install -y yum-utils
-   sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-   sudo yum -y install terraform
-```
-- [x] Create deployment directory:  
-```
-  sudo -i
-  cd /home
-  mkdir magento && cd magento
-```
-- [x] Clone repo:  
-> 
-```
-  git clone -b module https://github.com/magenx/Magento-2-aws-cluster-terraform.git .
-```
->  
-❗ Right after `terraform apply` you will receive email from amazon to approve resources    
-- [x] Create backend state.config with your s3 bucket
-- [x] Adjust your settings, edit your [cidr], [brand], [domain], [email]
-- [x] Define either [production] or [developer] environment config
-  
-❗ ```For production deployment make sure to enable deletion protection and backup retention```  
-   
-- [x] Run:
-```
-   terraform init -backend-config=./state.config
-   terraform workspace new developer
-   terraform plan -out developer.plan.out -no-color 2>&1 > developer.plan.out.txt
-   terraform apply
-```
-> to destroy infrastructure: ```terraform destroy```  
-> resources created outside of terraform must be deleted manually!
+- ECS EC2 clusters with separate Varnish and backend ASGs (ARM Graviton, mixed On-Demand + Spot)
+- Aurora MySQL 8.0 with read replica autoscaling and Performance Insights
+- ElastiCache Valkey 8.x — two clusters (session, cache) with TLS and encryption at rest
+- OpenSearch 2.x for Magento catalog search
+- Amazon MQ (RabbitMQ 3.13) for async queue processing
+- imgproxy running as a Lambda container image (ARM64) behind CloudFront for image transformation
+- CloudFront distribution with WAF ACL (IP lists, geo-blocking, rate limiting, AWS managed rules)
+- Internal ALB (VPC origin) with HTTPS termination and CloudFront secret header enforcement
+- EFS file system with three access points: `public` (read-only, symlinked releases), `shared` (writable), `releases` (extracted archives)
+- S3 buckets: `media`, `releases`, `backup`, `logs`
+- CodeBuild release pipeline: S3 upload → EventBridge → SSM Automation → CodeBuild → EFS symlink switch
+- EC2 `t4g.nano` NAT instance (Debian ARM) instead of managed NAT Gateway (~$0.50/mo vs ~$32/mo per AZ)
+- Route 53 hosted zone, ACM certificates (regional + us-east-1 for CloudFront)
+- SES domain identity for transactional email
+- SNS topics for budget, devops, and security alerts
+- AWS Budgets with forecasted threshold alerts at 25%–150%
+- Cost Anomaly Detection with immediate SNS notification
+- SSM Parameter Store for all service credentials (passwords as SecureString)
+- CloudWatch alarms for Aurora, ElastiCache, OpenSearch, ALB, and ASG metrics
 
-<br />
+---
 
-## Complete setup:
- `2` ecs autoscaling groups with launch templates configuration
- `2` ecs target groups for load balancer (varnish)   
- `1` ecr repository
- `1` load internal balancers with listeners / rules  
- `1` rds/aurora databases multi AZ option  
- `1` opensearch domain for Magento catalog search  
- `2` redis elasticache cluster for sessions and cache  
- `1` rabbitmq broker to manage queue messages  
- `4` s3 buckets for [releases], [media], [system], and [logs] (with access policy)    
- `1` cloudfront distribution with [s3] and [alb vpc origin]  
- `1` s3 endpoin  
- `1` efs file system for shared folders, with mount target per AZ  
- `1` sns topic default subscription to receive email alerts  
- `1` ses user access details for smtp module  
- 
- >resources are grouped into a virtual network, VPC dedicated to your brand  
- >the settings initially imply a large store, and are designed for huge traffic.  
- >services are clustered and replicated thus ready for failover.
- 
-##
-- [x] Deployment into isolated Virtual Private Cloud
-- [x] Autoscaling policy per each group
-- [x] Managed with [Systems Manager](https://aws.amazon.com/systems-manager/) agent
-- [x] Instance Profile assigned to simplify management
-- [x] Create and use ssm documents and EventBridge rules to automate tasks
-- [x] Simple Email Service authentication for SMTP Magento module
-- [x] CloudWatch agent configured to stream logs
-- [x] All Magento files managed with git only
-- [x] Configuration settings saved in Parameter Store
-- [x] Live shop in production mode / read-only 
-- [x] Security groups configured for every service and instances
-- [x] Lambda images optimization with imgproxy
-- [x] Enhanced security in AWS
-- [x] AWS WAF Protection rules  
-  
-## 💰 Infracost - shows cloud infrastructure cost estimates:
-```
+## Cost Estimate
+
+A developer configuration using the default `developer.config.yaml` (single AZ, `t4g` instance types, minimal node counts) runs approximately **$300–$450/month** depending on region and traffic volume. The largest cost drivers are Aurora (`db.t3.medium`), OpenSearch (`t3.small.search`), and Amazon MQ (`mq.t3.micro`).
+
+A production configuration with Multi-AZ, larger instance types, and multiple read replicas runs approximately **$600–$900/month** before Reserved Instance discounts.
+
+Use [Infracost](https://www.infracost.io/) for an accurate estimate against your specific configuration:
+
+```bash
 infracost breakdown --path .
-INFO Autodetected 1 Terraform project across 1 root module
-INFO Found Terraform project main at directory .
-
-Project: main
-
-OVERALL TOTAL       **$681.87 
-
-──────────────────────────────────
-294 cloud resources were detected:
-∙ 50 were estimated
-∙ 238 were free
-∙ 6 are not supported
 ```
-> ** conditionally approximate price per month of this infrastructure.  
 
-<br/>
+---
 
-## :hammer_and_wrench: Magento 2 development | source code:  
-https://github.com/magenx/Magento-2-server-installation
-> Replaced over 200+ useless modules. Minimal Magento 2 package can be extended anytime.
-> modules configuration here: https://github.com/magenx/Magento-2-server-installation/blob/master/composer_replace  
-   
-   
-**Performance and security enhancements**
-- Faster backend and frontend from 14% upto 50%
-- Better memory management upto 15%
-- Easy deployments
-- Less dependencies
-- Zero maintenance
-- Low security risks
+## Quick Start
 
-<br />
+```bash
+# 1. Clone
+git clone https://github.com/easecloud/magento2-aws-ecs-terraform.git
+cd magento2-aws-ecs-terraform
 
-## CI/CD scenario:
-[Magento 2 deployment pipeline](https://github.com/magenx/Magento-2-deployment-pipeline) - Fully automated Magento 2 development and deployment pipeline with code review, composer check and pre-release => release workflow | MVP  
-  [ just create your own repository, add your magento files, copy only .github folder to your reposity, it will auto init ]
-- [x] Event driven CodeBuild
-- [X] DevOps with local docker environment - https://github.com/magenx/Magento-2-docker-configuration 
-   
-<br />
-   
-## :e-mail: Contact us for installation and support:
-We can launch this project for your store in a short time. Many big retailers have already migrated to this architecture.
-- [x] Open an issue to help make it better.
-- [x] Send a private message on [Linkedin](https://www.linkedin.com/in/deniszokov/)  
-    
-<br />
-    
-## :heart_eyes_cat: Support the project  
-This takes time and research. You can use this for free. But its not free to create it.
-If you are using this project, there are few ways you can support it:
-- [x] Star and sharing the project
-- [x] Open an issue to help make it better
-- [x] Write a review https://trustpilot.com/review/www.magenx.com  
-  
-❤️ Opensource  
+# 2. Edit brand, domain, and email in developer.config.yaml
 
-<sub>[Magento 2 on the AWS Cloud: Quick Start Deployment](https://www.magenx.com/blog/post/adobe-commerce-cloud-alternative-infrastructure-as-code-terraform-configuration.html)</sub>
+# 3. Create state bucket and state.config (see Prerequisites)
+aws s3 mb s3://your-tfstate-bucket --region us-east-1
+
+# 4. Initialize, create workspace, and deploy
+terraform init -backend-config=state.config
+terraform workspace new developer
+terraform plan -out developer.plan
+terraform apply developer.plan
+```
+
+After apply: confirm SNS subscription emails, update Route 53 nameservers at your registrar, add ACM DNS validation CNAME records, push Docker images to ECR, and upload your first release archive to the releases S3 bucket.
+
+---
+
+## Configuration
+
+Infrastructure is configured through `developer.config.yaml` (or `staging.config.yaml` / `production.config.yaml` for other workspaces). There are no `.tfvars` files. The active workspace name determines which YAML file is loaded.
+
+Minimum required changes before first apply:
+- `brand` — short identifier embedded in all resource names
+- `domain` — your store's domain
+- `sns.topic.*.email` — alert notification addresses
+
+See the full field reference: [docs/setup/config-reference.md](docs/setup/config-reference.md)
+
+---
+
+## Documentation
+
+- [Prerequisites](docs/setup/prerequisites.md)
+- [ECS Quick Start](docs/setup/ecs-quickstart.md)
+- [Architecture Overview](docs/architecture/ecs-overview.md)
+- [Deploying Releases](docs/operations/deploying-releases.md)
+- [Configuration Reference](docs/setup/config-reference.md)
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE)
