@@ -7,7 +7,7 @@
 # Create SSM Document to check and deploy latest release on EC2 from S3
 # # ---------------------------------------------------------------------------------------------------------------------#
 resource "aws_ssm_document" "release" {
-  name            = "LatestReleaseDeployment"
+  name            = "${local.project}-LatestReleaseDeployment"
   document_type   = "Automation"
   document_format = "YAML"
   content         = <<EOF
