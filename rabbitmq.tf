@@ -18,23 +18,36 @@ resource "random_password" "rabbitmq" {
 # Create SSM Parameterstore for RabbitMQ env
 # # ---------------------------------------------------------------------------------------------------------------------#
 locals {
-  rabbitmq = {
-    RABBITMQ_PASSWORD      = random_password.rabbitmq.result
+  rabbitmq_plain = {
     RABBITMQ_ARN           = try(aws_mq_broker.this.arn, null)
     RABBITMQ_ID            = try(aws_mq_broker.this.id, null)
     RABBITMQ_ENDPOINT      = try(trimsuffix(trimprefix("${aws_mq_broker.this.instances.0.endpoints.0}", "amqps://"), ":5671"), null)
     RABBITMQ_DASHBOARD_URL = try(aws_mq_broker.this.instances.0.console_url, null)
   }
+  rabbitmq_secure = {
+    RABBITMQ_PASSWORD = random_password.rabbitmq.result
+  }
 }
 
 resource "aws_ssm_parameter" "rabbitmq" {
-  for_each    = local.rabbitmq
+  for_each    = local.rabbitmq_plain
   name        = "/${local.project}/${each.key}"
   description = "RabbitMQ parameter: ${each.key}"
   type        = "String"
   value       = each.value
   tags = {
-    Service   = "rabbitmq"
+    Service = "rabbitmq"
+  }
+}
+
+resource "aws_ssm_parameter" "rabbitmq_secure" {
+  for_each    = local.rabbitmq_secure
+  name        = "/${local.project}/${each.key}"
+  description = "RabbitMQ secret parameter: ${each.key}"
+  type        = "SecureString"
+  value       = each.value
+  tags = {
+    Service = "rabbitmq"
   }
 }
 # # ---------------------------------------------------------------------------------------------------------------------#
@@ -49,8 +62,8 @@ resource "aws_mq_broker" "this" {
   deployment_mode    = local.env.rabbitmq.deployment_mode
   subnet_ids         = local.env.rabbitmq.deployment_mode == "SINGLE_INSTANCE" ? [module.vpc.primary_private_subnet_id] : module.vpc.private_subnets
   user {
-    username         = local.env.brand
-    password         = random_password.rabbitmq.result
+    username = local.env.brand
+    password = random_password.rabbitmq.result
   }
   configuration {
     id       = aws_mq_configuration.this.id
@@ -59,7 +72,7 @@ resource "aws_mq_broker" "this" {
   encryption_options {
     use_aws_owned_key = local.env.rabbitmq.encryption_options.use_aws_owned_key
   }
-  publicly_accessible = local.env.rabbitmq.publicly_accessible
+  publicly_accessible        = local.env.rabbitmq.publicly_accessible
   auto_minor_version_upgrade = local.env.rabbitmq.auto_minor_version_upgrade
   maintenance_window_start_time {
     day_of_week = local.env.rabbitmq.maintenance_window_start_time.day_of_week
@@ -70,7 +83,7 @@ resource "aws_mq_broker" "this" {
     general = local.env.rabbitmq.logs.general
   }
   tags = {
-    Name   = "${local.project}-rabbitmq"
+    Name = "${local.project}-rabbitmq"
   }
 }
 # # ---------------------------------------------------------------------------------------------------------------------#
@@ -99,38 +112,38 @@ module "rabbitmq_security_group" {
 
   ingress_with_source_security_group_id = [
     {
-      from_port   = 5672
-      to_port     = 5672
-      protocol    = "tcp"
-      description = "RabbitMQ AMQP from application servers"
+      from_port                = 5672
+      to_port                  = 5672
+      protocol                 = "tcp"
+      description              = "RabbitMQ AMQP from application servers"
       source_security_group_id = module.autoscaling_security_group["backend"].security_group_id
     },
     {
-      from_port   = 5671
-      to_port     = 5671
-      protocol    = "tcp"
-      description = "RabbitMQ AMQP SSL from application servers"
+      from_port                = 5671
+      to_port                  = 5671
+      protocol                 = "tcp"
+      description              = "RabbitMQ AMQP SSL from application servers"
       source_security_group_id = module.autoscaling_security_group["backend"].security_group_id
     },
     {
-      from_port   = 15672
-      to_port     = 15672
-      protocol    = "tcp"
-      description = "RabbitMQ Management UI"
+      from_port                = 15672
+      to_port                  = 15672
+      protocol                 = "tcp"
+      description              = "RabbitMQ Management UI"
       source_security_group_id = module.autoscaling_security_group["backend"].security_group_id
     },
     {
-      from_port   = 25672
-      to_port     = 25672
-      protocol    = "tcp"
-      description = "RabbitMQ Erlang distribution for clustering"
+      from_port                = 25672
+      to_port                  = 25672
+      protocol                 = "tcp"
+      description              = "RabbitMQ Erlang distribution for clustering"
       source_security_group_id = module.rabbitmq_security_group.security_group_id
     },
     {
-      from_port   = 4369
-      to_port     = 4369
-      protocol    = "tcp"
-      description = "RabbitMQ EPMD for clustering"
+      from_port                = 4369
+      to_port                  = 4369
+      protocol                 = "tcp"
+      description              = "RabbitMQ EPMD for clustering"
       source_security_group_id = module.rabbitmq_security_group.security_group_id
     }
   ]

@@ -20,10 +20,10 @@ resource "random_password" "elasticache" {
 locals {
   elasticache = merge([
     for elasticache_key, elasticache_output in module.elasticache : {
-    "ELASTICACHE_${upper(elasticache_key)}_REPLICATION_GROUP_ARN"                      = elasticache_output.replication_group_arn
-    "ELASTICACHE_${upper(elasticache_key)}_REPLICATION_GROUP_ID"                       = elasticache_output.replication_group_id
-    "ELASTICACHE_${upper(elasticache_key)}_REPLICATION_GROUP_PRIMARY_ENDPOINT_ADDRESS" = elasticache_output.replication_group_primary_endpoint_address
-    "ELASTICACHE_${upper(elasticache_key)}_REPLICATION_GROUP_READER_ENDPOINT_ADDRESS"  = elasticache_output.replication_group_reader_endpoint_address
+      "ELASTICACHE_${upper(elasticache_key)}_REPLICATION_GROUP_ARN"                      = elasticache_output.replication_group_arn
+      "ELASTICACHE_${upper(elasticache_key)}_REPLICATION_GROUP_ID"                       = elasticache_output.replication_group_id
+      "ELASTICACHE_${upper(elasticache_key)}_REPLICATION_GROUP_PRIMARY_ENDPOINT_ADDRESS" = elasticache_output.replication_group_primary_endpoint_address
+      "ELASTICACHE_${upper(elasticache_key)}_REPLICATION_GROUP_READER_ENDPOINT_ADDRESS"  = elasticache_output.replication_group_reader_endpoint_address
     }
   ]...)
 }
@@ -35,7 +35,17 @@ resource "aws_ssm_parameter" "elasticache" {
   type        = "String"
   value       = each.value
   tags = {
-    Service   = "elasticache"
+    Service = "elasticache"
+  }
+}
+
+resource "aws_ssm_parameter" "elasticache_auth_token" {
+  name        = "/${local.project}/ELASTICACHE_AUTH_TOKEN"
+  description = "ElastiCache auth token"
+  type        = "SecureString"
+  value       = random_password.elasticache.result
+  tags = {
+    Service = "elasticache"
   }
 }
 # # ---------------------------------------------------------------------------------------------------------------------#
@@ -59,7 +69,7 @@ module "elasticache" {
   maintenance_window         = each.value.maintenance_window
   apply_immediately          = each.value.apply_immediately
   vpc_id                     = module.vpc.vpc_id
-  security_group_name  = "${local.project}-elasticache"
+  security_group_name        = "${local.project}-elasticache"
   security_group_rules = {
     ingress_vpc = {
       description = "VPC allowed traffic"
@@ -74,9 +84,9 @@ module "elasticache" {
   parameter_group_family      = local.env.elasticache.parameter_group_family
   parameter_group_description = "${title(local.project)} parameter group"
   parameters = [
-      for name, value in local.env.elasticache.parameters : {
-      name         = name
-      value        = value
+    for name, value in local.env.elasticache.parameters : {
+      name  = name
+      value = value
     }
   ]
 }
