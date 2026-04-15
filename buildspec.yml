@@ -1,0 +1,40 @@
+version: 0.2
+
+env:
+  variables:
+    EFS_MOUNT: "/mnt/efs"
+    RELEASES_DIR: "/mnt/efs/releases"
+    PUBLIC_DIR: "/mnt/efs/public"
+    SHARED_DIR: "/mnt/efs/shared"
+
+phases:
+  install:
+    commands:
+      - echo "Starting release deployment for $RELEASE_FILE"
+
+  pre_build:
+    commands:
+      - RELEASE_NAME=$(basename $RELEASE_FILE .tar.gz)
+      - RELEASE_TARGET="$RELEASES_DIR/$RELEASE_NAME"
+      - mkdir -p "$RELEASE_TARGET"
+      - mkdir -p "$SHARED_DIR"
+
+  build:
+    commands:
+      - echo "Downloading release from S3..."
+      - aws s3 cp "s3://$S3_RELEASE_BUCKET/$RELEASE_FILE" /tmp/release.tar.gz
+      - echo "Extracting release..."
+      - tar -xzf /tmp/release.tar.gz -C "$RELEASE_TARGET"
+      - echo "Linking shared directories..."
+      - ln -sfn "$SHARED_DIR/media" "$RELEASE_TARGET/pub/media"
+      - ln -sfn "$SHARED_DIR/var" "$RELEASE_TARGET/var"
+      - echo "Switching live symlink..."
+      - ln -sfn "$RELEASE_TARGET" "${PUBLIC_DIR}/current"
+      - echo "Release $RELEASE_NAME is now live"
+
+  post_build:
+    commands:
+      - echo "Cleaning up old releases (keep last 3)..."
+      - ls -dt "$RELEASES_DIR"/*/ | tail -n +4 | xargs rm -rf || true
+      - rm -f /tmp/release.tar.gz
+      - echo "Deployment complete"
