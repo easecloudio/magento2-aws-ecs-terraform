@@ -30,7 +30,6 @@ locals {
     Terraform    = true
     Brand        = local.env.brand
     Codename     = local.env.codename
-    Config       = base64decode("TWFnZW5Y")
     Environment  = local.environment
   }
 
