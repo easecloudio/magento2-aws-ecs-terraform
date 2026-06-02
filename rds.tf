@@ -6,21 +6,34 @@
 # Create SSM Parameterstore for RDS env
 # # ---------------------------------------------------------------------------------------------------------------------#
 locals {
-  rds = {
-    DATABASE_PASSWORD   = random_password.database.result
+  rds_plain = {
     DATABASE_ARN        = try(module.rds.db_instance_arn, null)
     DATABASE_ENDPOINT   = try(module.rds.db_instance_endpoint, null)
     DATABASE_IDENTIFIER = try(module.rds.db_instance_identifier, null)
     DATABASE_NAME       = try(module.rds.db_instance_name, null)
     DATABASE_PORT       = try(module.rds.db_instance_port, null)
   }
+  rds_secure = {
+    DATABASE_PASSWORD = random_password.database.result
+  }
 }
 
 resource "aws_ssm_parameter" "rds" {
-  for_each    = local.env.rds.create ? local.rds : {}
+  for_each    = local.env.rds.create ? local.rds_plain : {}
   name        = "/${local.project}/${each.key}"
   description = "RDS parameter: ${each.key}"
   type        = "String"
+  value       = each.value
+  tags = {
+    Service = "rds"
+  }
+}
+
+resource "aws_ssm_parameter" "rds_secure" {
+  for_each    = local.env.rds.create ? local.rds_secure : {}
+  name        = "/${local.project}/${each.key}"
+  description = "RDS secret parameter: ${each.key}"
+  type        = "SecureString"
   value       = each.value
   tags = {
     Service = "rds"

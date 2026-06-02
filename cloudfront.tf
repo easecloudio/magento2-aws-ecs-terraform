@@ -5,7 +5,11 @@
 # # ---------------------------------------------------------------------------------------------------------------------#
 # Generate random uuid string that is intended to be used as secret header
 # # ---------------------------------------------------------------------------------------------------------------------#
-resource "random_uuid" "secret_header" {}
+resource "random_uuid" "secret_header" {
+  keepers = {
+    project = local.project
+  }
+}
 
 # # ---------------------------------------------------------------------------------------------------------------------#
 # Create Cloudfront distribution with vpc origin and lambda

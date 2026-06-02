@@ -80,17 +80,11 @@ data "aws_iam_policy_document" "media" {
     }
   }
   statement {
-    actions = [
-      "s3:GetObject",
-      "s3:ListBucket"
-    ]
-    resources = [
-      module.s3["media"].s3_bucket_arn,
-      "${module.s3["media"].s3_bucket_arn}/*"
-    ]
+    actions   = ["s3:GetObject"]
+    resources = ["${module.s3["media"].s3_bucket_arn}/*"]
     principals {
       type        = "AWS"
-      identifiers = ["*"]
+      identifiers = [module.cloudfront.cloudfront_origin_access_identity_iam_arns["s3_bucket_media_optimized"]]
     }
   }
 }

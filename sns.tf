@@ -12,7 +12,7 @@ module "sns" {
   name     = "${local.project}-${each.key}"
   subscriptions = {
     for email_address in each.value.email :
-    "email" => {
+    email_address => {
       protocol = "email"
       endpoint = email_address
     }

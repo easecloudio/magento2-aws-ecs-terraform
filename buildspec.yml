@@ -14,6 +14,11 @@ phases:
 
   pre_build:
     commands:
+      - |
+        if [ -z "$RELEASE_FILE" ]; then
+          echo "ERROR: RELEASE_FILE is not set. Aborting."
+          exit 1
+        fi
       - RELEASE_NAME=$(basename $RELEASE_FILE .tar.gz)
       - RELEASE_TARGET="$RELEASES_DIR/$RELEASE_NAME"
       - mkdir -p "$RELEASE_TARGET"
@@ -31,10 +36,16 @@ phases:
       - echo "Switching live symlink..."
       - ln -sfn "$RELEASE_TARGET" "${PUBLIC_DIR}/current"
       - echo "Release $RELEASE_NAME is now live"
+      - echo "Triggering ECS rolling redeployment..."
+      - |
+        for SERVICE in $(aws ecs list-services --cluster "${PROJECT}-backend-ecs-cluster" --query 'serviceArns[]' --output text); do
+          aws ecs update-service --cluster "${PROJECT}-backend-ecs-cluster" --service "$SERVICE" --force-new-deployment
+        done
+      - echo "ECS redeployment triggered"
 
   post_build:
     commands:
       - echo "Cleaning up old releases (keep last 3)..."
-      - ls -dt "$RELEASES_DIR"/*/ | tail -n +4 | xargs rm -rf || true
+      - ls -dt "$RELEASES_DIR"/*/ | tail -n +4 | xargs --no-run-if-empty rm -rf
       - rm -f /tmp/release.tar.gz
       - echo "Deployment complete"

@@ -7,10 +7,19 @@
 # # ---------------------------------------------------------------------------------------------------------------------#
 resource "random_password" "database" {
   length           = 16
-  lower            = true
-  upper            = true
-  numeric          = true
-  special          = true
+  min_lower        = 1
+  min_upper        = 1
+  min_numeric      = 1
+  min_special      = 1
+  override_special = "!&#$"
+}
+
+resource "random_password" "aurora" {
+  length           = 16
+  min_lower        = 1
+  min_upper        = 1
+  min_numeric      = 1
+  min_special      = 1
   override_special = "!&#$"
 }
 # # ---------------------------------------------------------------------------------------------------------------------#
@@ -66,7 +75,7 @@ module "aurora" {
   manage_master_user_password_rotation                   = local.env.aurora.manage_master_user_password_rotation
   master_user_password_rotation_automatically_after_days = local.env.aurora.master_user_password_rotation_automatically_after_days
   master_username                                        = local.env.aurora.master_username
-  master_password                                        = random_password.database.result
+  master_password                                        = random_password.aurora.result
   database_name                                          = local.env.aurora.database_name
   backup_retention_period                                = 7
   preferred_backup_window                                = "02:00-05:00"

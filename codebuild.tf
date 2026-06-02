@@ -55,6 +55,15 @@ resource "aws_iam_role_policy" "codebuild" {
           "ec2:CreateNetworkInterfacePermission"
         ]
         Resource = ["*"]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:ListServices",
+          "ecs:DescribeServices",
+          "ecs:UpdateService"
+        ]
+        Resource = ["*"]
       }
     ]
   })

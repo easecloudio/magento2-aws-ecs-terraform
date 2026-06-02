@@ -119,7 +119,18 @@ module "ecs_service" {
             mountOptions  = ["exec", "noatime", "nodiratime"]
             size          = local.env.ecs.container[each.key].memory
           }
-        ] : []
+          ] : [
+          {
+            containerPath = "/tmp"
+            mountOptions  = ["noatime", "nodiratime"]
+            size          = 512
+          },
+          {
+            containerPath = "/var/run"
+            mountOptions  = ["noatime", "nodiratime"]
+            size          = 64
+          }
+        ]
       }
       secrets = [for secret in local.env.ecs.container[each.key].secrets : {
         name      = secret

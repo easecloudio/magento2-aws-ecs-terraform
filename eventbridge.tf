@@ -59,7 +59,7 @@ module "eventbridge" {
           }
           input_template = <<END
 {
-  "S3ObjectKey": ["<S3ObjectKey>"]
+  "S3ObjectKey": "<S3ObjectKey>"
 }
 END
         }
