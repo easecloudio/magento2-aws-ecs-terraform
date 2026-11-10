@@ -7,7 +7,7 @@ This guide walks through a complete deployment from zero to a running store. Com
 ## Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/easecloud/magento2-aws-ecs-terraform.git
+git clone https://github.com/easecloudio/magento2-aws-ecs-terraform.git
 cd magento2-aws-ecs-terraform
 ```
 

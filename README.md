@@ -82,7 +82,7 @@ infracost breakdown --path .
 
 ```bash
 # 1. Clone
-git clone https://github.com/easecloud/magento2-aws-ecs-terraform.git
+git clone https://github.com/easecloudio/magento2-aws-ecs-terraform.git
 cd magento2-aws-ecs-terraform
 
 # 2. Edit brand, domain, and email in developer.config.yaml
@@ -146,7 +146,7 @@ If your team is scaling Magento 2 on AWS or needs help with infrastructure desig
 
 Found a bug or have a feature request?
 
-🐛 [Create a GitHub issue](https://github.com/easecloud/magento2-aws-ecs-terraform/issues)
+🐛 [Create a GitHub issue](https://github.com/easecloudio/magento2-aws-ecs-terraform/issues)
 
 Please include:
 - Terraform version (`terraform version`)
